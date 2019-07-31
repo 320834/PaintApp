@@ -1,3 +1,58 @@
 .canvas {
+}
+
+.contain {
+  display: flex;
+  position: fixed;
+  width: 100vw;
+}
+
+.tools {
+  width: 200px;
+  padding: 1%;
+}
+
+.toolsNav {
+  /* padding-left: 35%; */
+}
+
+.canvasWrapper {
+  overflow: auto;
+  overflow-x: scroll;
+  white-space: nowrap;
+
+  max-height: 100vh;
+
+  width: 85vw;
+}
+
+.topScroll {
+  overflow-x: scroll;
+  width: 85vw;
+}
+
+.scrollDiv {
   border: solid;
+}
+
+@media only screen and (max-width: 1000px) {
+  .canvasWrapper {
+    overflow: auto;
+    overflow-x: scroll;
+    white-space: nowrap;
+
+    max-height: 100vh;
+
+    width: 800px;
+  }
+
+  .topScroll {
+    overflow-x: scroll;
+    width: 800px;
+  }
+
+  .tools {
+    width: 200px;
+    padding: 1%;
+  }
 }
