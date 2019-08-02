@@ -1,6 +1,5 @@
 import React from "react";
 import Canvas from "./Components/Canvas";
-import HomePage from "./Components/HomePage";
 import Navigation from "./Components/Navigation";
 import "./App.css";
 
@@ -9,6 +8,11 @@ class App extends React.Component {
     super(props);
     this.welcomeButton = React.createRef();
   }
+
+  state = {
+    welcomeText: "",
+    ip: "54.80.26.41"
+  };
 
   welcomeDiv = () => {
     return (
@@ -55,7 +59,19 @@ class App extends React.Component {
   };
 
   componentDidMount = () => {
-    this.welcomeButton.current.click();
+    if (window.innerWidth < 500) {
+      this.setState({
+        welcomeText:
+          "We apologize for the inconvience. Phone functionality has not been fully implemented. Please use a personal computer"
+      });
+      this.welcomeButton.current.click();
+    } else {
+      this.setState({
+        welcomeText:
+          "Please draw anything in the background. Your strokes are displayed real time to other connected users to see."
+      });
+      this.welcomeButton.current.click();
+    }
   };
 
   welcomeText = () => {
@@ -64,7 +80,7 @@ class App extends React.Component {
         Welcome to my real-time paint application.
         <br />
         <br />
-        In the white space behind this message, please draw something.
+        {this.state.welcomeText}
       </p>
     );
   };
@@ -72,9 +88,9 @@ class App extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <div>
+        <div className="totalBody">
           <Navigation />
-          <Canvas />
+          <Canvas ip={this.state.ip} />
         </div>
 
         <button

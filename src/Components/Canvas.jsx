@@ -6,7 +6,7 @@ import "../../node_modules/bootstrap/dist/js/bootstrap.js";
 import "../ComponentStyle/CanvasStyle.css";
 import Toolbar from "./Toolbar";
 
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Route } from "react-router-dom";
 
 import socketIOClient from "socket.io-client";
 
@@ -50,8 +50,10 @@ class Canvas extends React.Component {
     positionX: [],
     positionY: [],
     stroke: true,
-    socket: socketIOClient("173.72.102.109:3001"),
-    pageUrl: "http://173.72.102.109:3001"
+    socket: socketIOClient(this.props.ip),
+    pageUrl: "http://" + this.props.ip,
+    users: 0,
+    connectedSockets: null
   };
 
   constructor(props) {
@@ -63,6 +65,11 @@ class Canvas extends React.Component {
   }
 
   componentDidMount() {
+    //Set map to the state
+
+    this.setState({ connectedSockets: new Map() });
+
+    //Fill canvas with data
     let context = this.canvas.current.getContext("2d");
     context.fillStyle = "white";
     context.fillRect(0, 0, this.state.canvasWidth, this.state.canvasHeight);
@@ -100,21 +107,23 @@ class Canvas extends React.Component {
       var context = this.canvas.current.getContext("2d");
 
       let boardX =
-        event.clientX -
-        this.canvas.current.getBoundingClientRect()["x"] -
-        this.state.linewidth / 3;
+        event.clientX - this.canvas.current.getBoundingClientRect()["x"];
       let boardY =
-        event.clientY -
-        this.canvas.current.getBoundingClientRect()["y"] -
-        this.state.linewidth / 3;
+        event.clientY - this.canvas.current.getBoundingClientRect()["y"];
 
       context.fillStyle = this.state.strokeStyle;
-      context.fillRect(
+
+      context.beginPath();
+      context.arc(boardX, boardY, this.state.linewidth / 2, 0, 2 * Math.PI);
+      context.closePath();
+      context.fill();
+
+      this.state.socket.emit("mouseClick", [
         boardX,
         boardY,
-        this.state.linewidth,
+        this.state.strokeStyle,
         this.state.linewidth
-      );
+      ]);
 
       // context.arc(boardX, boardY, this.state.linewidth, 0, 2 * Math.PI, true);
     } else if (this.state.fill) {
@@ -125,6 +134,17 @@ class Canvas extends React.Component {
       //   event.clientY - this.canvas.current.getBoundingClientRect()["y"];
       // this.fillFuncHelper(boardX, boardY);
     }
+  };
+
+  handleClickReceive = (boardX, boardY, strokeStyle, lineWidth) => {
+    var context = this.canvas.current.getContext("2d");
+
+    context.fillStyle = strokeStyle;
+
+    context.beginPath();
+    context.arc(boardX, boardY, lineWidth / 2, 0, 2 * Math.PI);
+    context.closePath();
+    context.fill();
   };
 
   fillFuncHelper = (startX, startY) => {
@@ -144,9 +164,9 @@ class Canvas extends React.Component {
     } else if (posY < 0 || posY > 800) {
       return;
     } else if (
-      currentImageData.data[0] == selectedColor[0] &&
-      currentImageData.data[1] == selectedColor[1] &&
-      currentImageData.data[2] == selectedColor[2]
+      currentImageData.data[0] === selectedColor[0] &&
+      currentImageData.data[1] === selectedColor[1] &&
+      currentImageData.data[2] === selectedColor[2]
     ) {
       return;
     } else {
@@ -353,10 +373,6 @@ class Canvas extends React.Component {
     return [red, green, blue];
   };
 
-  getState = () => {
-    console.log(this.state);
-  };
-
   changeScroll = event => {
     this.bottomScroll.current.scrollLeft = this.topScroll.current.scrollLeft;
   };
@@ -375,25 +391,26 @@ class Canvas extends React.Component {
   };
 
   render() {
-    let connectedSockets = new Map();
-
     this.state.socket.on("socketConnect", socketIDIterator => {
       for (var i = 0; i < socketIDIterator.length; i++) {
-        if (connectedSockets.has(socketIDIterator[i])) {
+        if (this.state.connectedSockets.has(socketIDIterator[i])) {
           //Do nothing
         } else {
           //Add to current list
-          connectedSockets.set(
+          this.state.connectedSockets.set(
             socketIDIterator[i],
             new SocketInstance(socketIDIterator[i])
           );
+          this.setState({ users: this.state.connectedSockets.size });
+          console.log("Connect: " + this.state.connectedSockets.size);
+          console.log(this.state.connectedSockets);
         }
       }
     });
 
     this.state.socket.on("drawReceive", data => {
-      if (data[0] != this.state.socket.id) {
-        let socketObj = connectedSockets.get(data[0]);
+      if (data[0] !== this.state.socket.id) {
+        let socketObj = this.state.connectedSockets.get(data[0]);
         //console.log(socketObj);
 
         //data[0] = socket id
@@ -413,8 +430,8 @@ class Canvas extends React.Component {
     });
 
     this.state.socket.on("mouseDownReceive", socketID => {
-      if (socketID != this.state.socket.id) {
-        var socketObj = connectedSockets.get(socketID);
+      if (socketID !== this.state.socket.id) {
+        var socketObj = this.state.connectedSockets.get(socketID);
         if (socketObj != null) {
           socketObj.setPaintTrue();
         }
@@ -422,8 +439,8 @@ class Canvas extends React.Component {
     });
 
     this.state.socket.on("mouseUpReceive", socketID => {
-      if (socketID != this.state.socket.id) {
-        var socketObj = connectedSockets.get(socketID);
+      if (socketID !== this.state.socket.id) {
+        var socketObj = this.state.connectedSockets.get(socketID);
         if (socketObj != null) {
           socketObj.x = [];
           socketObj.y = [];
@@ -433,13 +450,22 @@ class Canvas extends React.Component {
     });
 
     this.state.socket.on("clearReceive", socketID => {
-      if (socketID != this.state.socket.id) {
+      if (socketID !== this.state.socket.id) {
         this.handleClearReceive();
       }
     });
 
+    this.state.socket.on("mouseClickReceive", data => {
+      if (data[0] !== this.state.socket.id) {
+        this.handleClickReceive(data[1], data[2], data[3], data[4]);
+      }
+    });
+
     this.state.socket.on("disconnectUser", socketID => {
-      connectedSockets.delete(socketID);
+      this.state.connectedSockets.delete(socketID);
+      console.log("Disconnect. Size: " + this.state.connectedSockets.size);
+      console.log(this.state.connectedSockets);
+      this.setState({ users: this.state.connectedSockets.size });
     });
 
     //In line css
@@ -474,8 +500,12 @@ class Canvas extends React.Component {
           </div>
 
           <div class="tools" ref={this.tools}>
+            <h6>
+              Online Users: {this.state.users > 0 ? this.state.users - 1 : 0}
+            </h6>
+            <br />
             <Router>
-              <div className="toolsNav">
+              {/* <div className="toolsNav">
                 <nav aria-label="Page navigation example">
                   <ul className="pagination">
                     <li className="page-item">
@@ -485,7 +515,7 @@ class Canvas extends React.Component {
                     </li>
                   </ul>
                 </nav>
-              </div>
+              </div> */}
               <Route exact path="/" component={this.getToolComp} />
             </Router>
           </div>

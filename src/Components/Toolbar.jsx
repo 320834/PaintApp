@@ -12,15 +12,11 @@ class Toolbar extends React.Component {
     color: "#000000"
   };
 
-  constructor(props) {
-    super(props);
-  }
-
   render() {
     return (
       <React.Fragment>
         <div className="lineWidthDiv">
-          <h6 className="lineWidthHeader">Line Width: </h6>
+          <h6 className="lineWidthHeader">Brush Size: </h6>
           <select onChange={this.props.onClickSize}>
             <option value="4">4px</option>
             <option value="6">6px</option>
@@ -32,11 +28,6 @@ class Toolbar extends React.Component {
             <option value="30">30px</option>
           </select>
         </div>
-        <br />
-        <button onClick={this.props.onClearClick} className="btn btn-primary">
-          Clear Board
-        </button>
-        <br />
         <br />
         <SketchPicker
           color={this.props.color}
