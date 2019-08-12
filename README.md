@@ -1,4 +1,7 @@
-***IMPORTANT***
+## Welcome
+
+This is the front end code my real time paint web application. Made with ReactJS.
+
 
 ## Notice
 In order to run this code, make sure to have create app installed onto your directory before doing npm start.
