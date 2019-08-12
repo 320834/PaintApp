@@ -1,3 +1,8 @@
+***IMPORTANT****
+
+In order to fun this code, make sure to have create app installed onto your directory before doing npm start
+
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
